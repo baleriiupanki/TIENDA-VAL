@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VAAAL</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <style>
+    /* Navbar con fondo azul pastel */
+    .navbar-custom {
+      background: linear-gradient(90deg, #6a11cb, #2575fc);
+    }
+
+    .navbar-custom .navbar-brand,
+    .navbar-custom .nav-link,
+    .navbar-custom .dropdown-toggle {
+      color: #f0f0f0 !important;
+      font-weight: 600;
+    }
+
+    .navbar-custom .nav-link:hover,
+    .navbar-custom .dropdown-toggle:hover {
+      color: #ffe066 !important;
+    }
+
+    /* Dropdown menú */
+    .dropdown-menu {
+      background-color: #f0f4ff;
+      border: none;
+      box-shadow: 0 4px 15px rgba(101, 90, 250, 0.2);
+    }
+
+    .dropdown-menu li a {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .dropdown-menu li a:hover {
+      background-color: #2575fc;
+      color: #fff !important;
+    }
+
+    /* Botón guardar personalizado */
+    #form-producto button[type="submit"] {
+      background-color: #6a11cb;
+      border: none;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+
+    #form-producto button[type="submit"]:hover {
+      background-color: #2575fc;
+    }
+
+    /* Formulario con fondo pastel suave y borde redondeado */
+    #seccion-registro {
+      background-color: #f7f9ff;
+      border: 1px solid #d6e0ff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 6px 12px rgba(101, 90, 250, 0.1);
+    }
+
+    /* Tarjetas productos con sombra y borde redondeado */
+    #lista-productos .card {
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(101, 90, 250, 0.15);
+      transition: transform 0.2s ease;
+    }
+
+    #lista-productos .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 24px rgba(101, 90, 250, 0.25);
+    }
+
+    /* Modal título */
+    #modalDetalle .modal-title {
+      color: #6a11cb;
+      font-weight: 700;
+    }
+
+    /* Detalle descripción */
+    #detalle-descripcion {
+      font-style: italic;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-custom">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">VAL SHOP</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu"
+        aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarMenu">
+
+        <!-- Menú izquierda -->
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0" id="menu-categorias">
+          <!-- Aquí JS pondrá Inicio y categorías -->
+        </ul>
+
+        <!-- Menú derecha -->
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a href="#" class="nav-link" id="btn-login">Acceder</a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" id="btn-registrar">Registrar</a>
+          </li>
+        </ul>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="container mt-4">
+
+    <!-- Aquí aparecerán las tarjetas con productos -->
+    <div id="lista-productos" class="row row-cols-1 row-cols-md-3 g-4">
+      <!-- Productos cargados por JS -->
+    </div>
+
+    <!-- FORMULARIO DE REGISTRO (oculto por defecto) -->
+    <!-- Lo he comentado porque tenemos formulario en admin, para evitar duplicados -->
+    <!--
+    <div class="mt-4 d-none" id="seccion-registro">
+      <h5 class="mb-4" style="color: #6a11cb;">Registrar nuevo producto</h5>
+      <form id="form-producto-publico" class="row g-3">
+        <div class="col-md-6">
+          <label for="input-nombre-publico" class="form-label">Nombre</label>
+          <input type="text" class="form-control" id="input-nombre-publico" required />
+        </div>
+
+        <div class="col-md-6">
+          <label for="input-precio-publico" class="form-label">Precio</label>
+          <input type="number" class="form-control" id="input-precio-publico" required min="0" step="0.01" />
+        </div>
+
+        <div class="col-md-6">
+          <label for="input-categoria-id-publico" class="form-label">Categoría</label>
+          <select class="form-select" id="input-categoria-id-publico" required>
+            <option value="">Seleccione categoría</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label for="input-descripcion-publico" class="form-label">Descripción</label>
+          <textarea class="form-control" id="input-descripcion-publico" rows="2"></textarea>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Imágenes</label>
+          <div id="contenedor-imagenes-publico">
+            <div class="input-group mb-2">
+              <input type="url" class="form-control input-imagen-publico" placeholder="URL de imagen" required />
+              <button type="button" class="btn btn-outline-danger btn-eliminar-imagen" title="Eliminar imagen">✖</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-primary mt-1" id="btn-agregar-imagen-publico">+ Agregar imagen</button>
+        </div>
+
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+    -->
+
+  </div>
+
+  <!-- MODAL DETALLE PRODUCTO -->
+  <div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detalle-nombre">Nombre Producto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p id="detalle-precio" class="fs-5 fw-semibold">Precio: $0.00</p>
+          <p id="detalle-descripcion">Descripción aquí...</p>
+
+          <div class="row" id="detalle-imagenes">
+            <!-- Imágenes cargadas por JS -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Login -->
+  <div class="modal fade" id="modalLogin" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="form-login" class="p-3">
+          <h5 class="modal-title mb-3">Iniciar Sesión</h5>
+          <div class="mb-3">
+            <input type="text" id="inputUsuario" class="form-control" placeholder="Usuario" required />
+          </div>
+          <div class="mb-3">
+            <input type="password" id="inputPassword" class="form-control" placeholder="Contraseña" required />
+          </div>
+          <div id="login-error" class="text-danger mb-2" style="display: none;"></div>
+          <button type="submit" class="btn btn-primary w-100">Acceder</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle (con Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Aquí iría tu main.js enlazado -->
+  <script src="main.js"></script>
+
+  <!-- Panel de Administración (oculto por defecto) -->
+  <div id="admin-panel" style="display: none;">
+    <div class="container my-5">
+      <div class="d-flex justify-content-between align-items-center admin-header mb-4">
+        <h1 class="mb-0">Panel de Administración</h1>
+        <button id="btn-logout" class="btn btn-light">Cerrar sesión</button>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <!-- Sección Categorías -->
+          <h2 class="section-header">Categorías</h2>
+          <form id="form-categoria" class="d-flex mb-3">
+            <input type="text" id="input-categoria" class="form-control me-2" placeholder="Nueva Categoría" required>
+            <button type="submit" class="btn btn-outline-primary">Añadir</button>
+          </form>
+          <ul id="lista-categorias" class="list-group">
+            <!-- Categorías aquí -->
+          </ul>
+        </div>
+
+        <div class="col-lg-8">
+          <!-- Sección Productos -->
+          <h2 class="section-header">Productos</h2>
+          <form id="form-producto" class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label" for="input-nombre">Nombre</label>
+              <input class="form-control" type="text" id="input-nombre" placeholder="Nombre del producto" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="input-precio">Precio</label>
+              <input class="form-control" type="number" id="input-precio" placeholder="Precio" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="input-categoria-id">Categoría</label>
+              <select class="form-select" id="input-categoria-id" required>
+                <option value="">Seleccione</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="input-descripcion">Descripción</label>
+              <textarea class="form-control" id="input-descripcion" rows="2" placeholder="Descripción"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Imágenes</label>
+              <div id="contenedor-imagenes-admin">
+                <!-- Campos de imagen agregados dinámicamente por JS -->
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary mt-1" id="btn-agregar-imagen-admin">+ Agregar imagen</button>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary">Guardar Producto</button>
+            </div>
+          </form>
+
+          <table class="table table-hover" id="tabla-productos">
+            <thead class="table-light">
+              <tr>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Categoría</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Filas generadas por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Registro -->
+  <div class="modal fade" id="modalRegistro" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="form-usuario" class="p-3">
+        <h5 class="modal-title mb-3">Registrar Usuario</h5>
+        <div class="mb-3">
+          <input type="text" id="input-usuario" class="form-control" placeholder="Usuario" required />
+        </div>
+        <div class="mb-3">
+          <input type="password" id="input-password" class="form-control" placeholder="Contraseña" required />
+        </div>
+        <div id="mensaje-registro" class="text-success mb-2" style="display:none;"></div>
+        <button type="submit" class="btn btn-primary w-100">Registrar</button>
+      </form>
+    </div>
+  </div>
+  </div>
+
+
+</body>
+
+</html>
