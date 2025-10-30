@@ -1,26 +1,35 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+  // 🌍 Detectar si estamos en local o en Render
+  const API_URL = window.location.hostname.includes('localhost')
+    ? 'http://localhost:3000'
+    : 'https://tienda-val.onrender.com'; // <-- tu dominio Render
+
   // Mostrar u ocultar panel admin según token
   const token = localStorage.getItem('token');
   const adminPanel = document.getElementById('admin-panel');
-  if (adminPanel) {  // para prevenir errores si no existe el panel en esta página
+  if (adminPanel) {
     adminPanel.style.display = token ? 'block' : 'none';
   }
+
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('token');
       if (adminPanel) adminPanel.style.display = 'none';
       alert('Has cerrado sesión.');
-      window.location.href = 'index.html';  // Ajusta la ruta según tu estructura
+      window.location.href = 'index.html';
     });
   }
 
-  // Aquí continúa tu código original
+  // Cargar datos iniciales
   cargarCategorias();
   cargarProductos();
   llenarSelectCategorias();
 
-  // Evento para registrar nuevo producto
+  // ==============================
+  // 🧩 REGISTRO DE PRODUCTO NUEVO
+  // ==============================
   document.getElementById('form-producto').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -34,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoria_id = document.getElementById('input-categoria-id').value;
     const descripcion = document.getElementById('input-descripcion').value.trim();
 
-    // Obtener todas las URLs de imágenes
     const urls = Array.from(document.querySelectorAll('.input-imagen'))
       .map(input => input.value.trim())
       .filter(url => url !== '');
@@ -45,7 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const resProducto = await fetch('http://localhost:3000/productos', {
+      // Crear producto
+      const resProducto = await fetch(`${API_URL}/productos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, precio, categoria_id, descripcion })
@@ -58,8 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const producto = await resProducto.json();
 
+      // Subir imágenes
       for (const url of urls) {
-        await fetch('http://localhost:3000/imagenes', {
+        await fetch(`${API_URL}/imagenes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url, producto_id: producto.id })
@@ -69,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Producto creado con éxito');
       document.getElementById('form-producto').reset();
 
-      // Reiniciar inputs de imagen a 1 solo vacío
       const contenedorImagenes = document.getElementById('contenedor-imagenes-admin');
       contenedorImagenes.innerHTML = `
         <div class="input-group mb-2">
@@ -86,11 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Botón para agregar input de imagen
+  // ==============================
+  // ➕ AGREGAR NUEVAS IMÁGENES
+  // ==============================
   const btnAgregarImagen =
-  document.getElementById('btn-agregar-imagen') ||
-  document.getElementById('btn-agregar-imagen-admin') ||
-  document.getElementById('btn-agregar-imagen-publico');
+    document.getElementById('btn-agregar-imagen') ||
+    document.getElementById('btn-agregar-imagen-admin') ||
+    document.getElementById('btn-agregar-imagen-publico');
 
   if (btnAgregarImagen) {
     btnAgregarImagen.addEventListener('click', () => {
@@ -111,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Delegación para eliminar inputs de imagen (deja mínimo 1)
+  // Eliminar inputs de imagen
   document.getElementById('contenedor-imagenes-admin').addEventListener('click', (e) => {
     if (e.target.classList.contains('btn-eliminar-imagen')) {
       const contenedor = document.getElementById('contenedor-imagenes-admin');
@@ -123,9 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ==============================
+  // 📦 CARGAR CATEGORÍAS Y PRODUCTOS
+  // ==============================
   async function cargarCategorias() {
     try {
-      const res = await fetch('http://localhost:3000/categorias');
+      const res = await fetch(`${API_URL}/categorias`);
       const categorias = await res.json();
       const menu = document.getElementById('menu-categorias');
       menu.innerHTML = '';
@@ -135,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const aInicio = document.createElement('a');
       aInicio.classList.add('nav-link');
       aInicio.href = '#';
-      aInicio.id = 'link-inicio'; // para poder usarlo en el event listener
       aInicio.textContent = 'Inicio';
       aInicio.addEventListener('click', e => {
         e.preventDefault();
@@ -147,18 +160,14 @@ document.addEventListener('DOMContentLoaded', () => {
       categorias.forEach(cat => {
         const li = document.createElement('li');
         li.classList.add('nav-item');
-
         const a = document.createElement('a');
         a.classList.add('nav-link');
         a.href = '#';
         a.textContent = cat.nombre;
-        a.dataset.nombre = cat.nombre;
-
         a.addEventListener('click', (e) => {
-          e.preventDefault(); // Evita que recargue la página
+          e.preventDefault();
           cargarProductosPorCategoria(cat.nombre);
         });
-
         li.appendChild(a);
         menu.appendChild(li);
       });
@@ -169,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function cargarProductos() {
     try {
-      const res = await fetch('http://localhost:3000/productos');
+      const res = await fetch(`${API_URL}/productos`);
       const productos = await res.json();
       mostrarProductos(productos);
     } catch (error) {
@@ -179,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function cargarProductosPorCategoria(categoriaNombre) {
     try {
-      const res = await fetch(`http://localhost:3000/productos?categoria=${encodeURIComponent(categoriaNombre)}`);
+      const res = await fetch(`${API_URL}/productos?categoria=${encodeURIComponent(categoriaNombre)}`);
       const productos = await res.json();
       mostrarProductos(productos);
     } catch (error) {
@@ -198,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tarjetas = await Promise.all(productos.map(async producto => {
       try {
-        const res = await fetch(`http://localhost:3000/imagenes?producto_id=${producto.id}`);
+        const res = await fetch(`${API_URL}/imagenes?producto_id=${producto.id}`);
         const imagenes = await res.json();
         const primeraImagen = imagenes.length > 0 ? imagenes[0].url : 'https://via.placeholder.com/150';
 
@@ -234,10 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function mostrarDetalle(id) {
     try {
-      const res = await fetch(`http://localhost:3000/productos/${id}`);
+      const res = await fetch(`${API_URL}/productos/${id}`);
       const prod = await res.json();
 
-      // Asignar contenido al modal
       document.getElementById('detalle-nombre').textContent = prod.nombre;
       document.getElementById('detalle-precio').textContent = `Precio: $${prod.precio}`;
       document.getElementById('detalle-descripcion').textContent = prod.descripcion || 'Sin descripción.';
@@ -261,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function llenarSelectCategorias() {
     try {
-      const res = await fetch('http://localhost:3000/categorias');
+      const res = await fetch(`${API_URL}/categorias`);
       const categorias = await res.json();
       const select = document.getElementById('input-categoria-id');
       select.innerHTML = `<option value="">Seleccione categoría</option>`;
@@ -276,8 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // === Login Modal ===
-
+  // ==============================
+  // 🔐 LOGIN Y REGISTRO DE USUARIO
+  // ==============================
   document.getElementById('btn-login').addEventListener('click', (e) => {
     e.preventDefault();
     const modalLogin = new bootstrap.Modal(document.getElementById('modalLogin'));
@@ -294,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginError = document.getElementById('login-error');
 
     try {
-      const res = await fetch('http://localhost:3000/auth/login', {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario, password })
@@ -308,10 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Guardar el token en localStorage
       localStorage.setItem('token', data.token);
-
-      // Redirigir al panel de administración
       window.location.href = 'admin.html';
 
     } catch (error) {
@@ -321,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // === Registro Usuario ===
   const btnRegistrar = document.getElementById('btn-registrar');
   const modalRegistro = new bootstrap.Modal(document.getElementById('modalRegistro'));
   const formUsuario = document.getElementById('form-usuario');
@@ -348,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const res = await fetch('http://localhost:3000/auth/register', { // Ajusta URL según tu backend
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario, password })
@@ -367,9 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mensajeRegistro.style.color = 'green';
       mensajeRegistro.style.display = 'block';
 
-      setTimeout(() => {
-        modalRegistro.hide();
-      }, 2000);
+      setTimeout(() => modalRegistro.hide(), 2000);
 
     } catch (error) {
       console.error('Error al registrar usuario:', error);
@@ -378,5 +381,5 @@ document.addEventListener('DOMContentLoaded', () => {
       mensajeRegistro.style.display = 'block';
     }
   });
-
 });
+
