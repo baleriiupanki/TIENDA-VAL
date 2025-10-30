@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const pool = require('../conexion');
 
 /**
  * @swagger
@@ -9,136 +9,48 @@ const db = require('../db');
  *   description: Gestión de categorías de productos
  */
 
-/**
- * @swagger
- * /categorias:
- *   get:
- *     summary: Obtener todas las categorías
- *     tags: [Categorías]
- *     responses:
- *       200:
- *         description: Lista de categorías obtenida correctamente
- *         content:
- *           application/json:
- *             example:
- *               - id: 1
- *                 nombre: "Consolas"
- *               - id: 2
- *                 nombre: "Accesorios"
- */
+// === Obtener todas las categorías ===
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM categorias');
-    res.json(rows);
+    const result = await pool.query('SELECT * FROM categorias');
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-/**
- * @swagger
- * /categorias:
- *   post:
- *     summary: Crear nueva categoría
- *     tags: [Categorías]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               nombre:
- *                 type: string
- *                 example: "Juegos de PC"
- *     responses:
- *       200:
- *         description: Categoría creada exitosamente
- *         content:
- *           application/json:
- *             example:
- *               id: 3
- *               nombre: "Juegos de PC"
- */
+// === Crear nueva categoría ===
 router.post('/', async (req, res) => {
   const { nombre } = req.body;
   try {
-    const [result] = await db.query('INSERT INTO categorias (nombre) VALUES (?)', [nombre]);
-    res.json({ id: result.insertId, nombre });
+    const result = await pool.query(
+      'INSERT INTO categorias (nombre) VALUES ($1) RETURNING id',
+      [nombre]
+    );
+    res.json({ id: result.rows[0].id, nombre });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-/**
- * @swagger
- * /categorias/{id}:
- *   put:
- *     summary: Actualizar categoría
- *     tags: [Categorías]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID de la categoría a actualizar
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               nombre:
- *                 type: string
- *                 example: "Periféricos"
- *     responses:
- *       200:
- *         description: Categoría actualizada exitosamente
- *         content:
- *           application/json:
- *             example:
- *               id: 1
- *               nombre: "Periféricos"
- */
+// === Actualizar categoría ===
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre } = req.body;
   try {
-    await db.query('UPDATE categorias SET nombre = ? WHERE id = ?', [nombre, id]);
+    await pool.query('UPDATE categorias SET nombre = $1 WHERE id = $2', [nombre, id]);
     res.json({ id, nombre });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-/**
- * @swagger
- * /categorias/{id}:
- *   delete:
- *     summary: Eliminar categoría
- *     tags: [Categorías]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID de la categoría a eliminar
- *     responses:
- *       200:
- *         description: Categoría eliminada correctamente
- *         content:
- *           application/json:
- *             example:
- *               mensaje: "Categoría eliminada"
- */
+// === Eliminar categoría ===
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await db.query('DELETE FROM categorias WHERE id = ?', [id]);
-    res.json({ mensaje: 'Categoría eliminada' });
+    await pool.query('DELETE FROM categorias WHERE id = $1', [id]);
+    res.json({ mensaje: 'Categoría eliminada correctamente' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

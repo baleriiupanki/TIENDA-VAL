@@ -1,12 +1,12 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const pool = require('../db'); // tu conexión MySQL con promisePool
+const pool = require('../conexion');
+const crypto = require('crypto');
 
 const router = express.Router();
+const SECRET_KEY = 'mi_secreto_ultra_seguro'; // guárdalo en .env en producción
 
-const SECRET_KEY = 'mi_secreto_ultra_seguro'; // mejor guardarlo en un .env en producción
-
-// Ruta para registrar usuario con contraseña MD5
+// === Registrar usuario ===
 router.post('/register', async (req, res) => {
   const { usuario, password } = req.body;
 
@@ -15,14 +15,13 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // Verificar si usuario ya existe
-    const [existing] = await pool.query('SELECT id FROM usuarios WHERE usuario = ?', [usuario]);
-    if (existing.length > 0) {
+    const existing = await pool.query('SELECT id FROM usuarios WHERE usuario = $1', [usuario]);
+    if (existing.rows.length > 0) {
       return res.status(409).json({ message: 'El usuario ya existe' });
     }
 
-    // Insertar usuario, la contraseña se guarda con MD5 en SQL
-    await pool.query('INSERT INTO usuarios (usuario, password) VALUES (?, MD5(?))', [usuario, password]);
+    const md5Pass = crypto.createHash('md5').update(password).digest('hex');
+    await pool.query('INSERT INTO usuarios (usuario, password) VALUES ($1, $2)', [usuario, md5Pass]);
 
     res.status(201).json({ message: 'Usuario registrado con éxito' });
   } catch (error) {
@@ -31,7 +30,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Ruta para login con contraseña MD5
+// === Login ===
 router.post('/login', async (req, res) => {
   const { usuario, password } = req.body;
 
@@ -40,16 +39,17 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const [rows] = await pool.query(
-      'SELECT * FROM usuarios WHERE usuario = ? AND password = MD5(?)',
-      [usuario, password]
+    const md5Pass = crypto.createHash('md5').update(password).digest('hex');
+    const result = await pool.query(
+      'SELECT * FROM usuarios WHERE usuario = $1 AND password = $2',
+      [usuario, md5Pass]
     );
 
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
     }
 
-    const user = rows[0];
+    const user = result.rows[0];
     const token = jwt.sign({ id: user.id, usuario: user.usuario }, SECRET_KEY, { expiresIn: '1h' });
 
     res.json({ message: 'Login exitoso', token });
