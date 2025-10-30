@@ -3,6 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initAdmin() {
+  // 🌍 Detectar si estamos en local o en Render
+  const API_URL = window.location.hostname.includes('localhost')
+    ? 'http://localhost:3000'
+    : 'https://tienda-val.onrender.com'; // 🔹 cambia si tu backend tiene otro nombre
+
   const token = localStorage.getItem('token');
   if (!token) {
     alert('No has iniciado sesión. Redirigiendo al login...');
@@ -11,9 +16,13 @@ async function initAdmin() {
   }
 
   try {
-    await Promise.all([cargarCategorias(token), cargarProductos(token), llenarSelectCategorias(token)]);
+    await Promise.all([
+      cargarCategorias(API_URL, token),
+      cargarProductos(API_URL, token),
+      llenarSelectCategorias(API_URL, token)
+    ]);
   } catch (error) {
-    alert('Error de autorización. Por favor inicia sesión de nuevo.');
+    alert('Error de autorización o conexión. Inicia sesión de nuevo.');
     localStorage.removeItem('token');
     window.location.href = 'index.html';
     return;
@@ -24,8 +33,8 @@ async function initAdmin() {
     window.location.href = 'index.html';
   });
 
-  document.getElementById('form-categoria').addEventListener('submit', manejadorCategoria);
-  document.getElementById('form-producto').addEventListener('submit', manejadorProducto);
+  document.getElementById('form-categoria').addEventListener('submit', e => manejadorCategoria(e, API_URL));
+  document.getElementById('form-producto').addEventListener('submit', e => manejadorProducto(e, API_URL));
   document.getElementById('btn-agregar-imagen').addEventListener('click', agregarCampoImagen);
   document.getElementById('contenedor-imagenes').addEventListener('click', e => {
     if (e.target.classList.contains('btn-eliminar-imagen')) {
@@ -34,20 +43,14 @@ async function initAdmin() {
   });
 }
 
-async function manejadorCategoria(e) {
+async function manejadorCategoria(e, API_URL) {
   e.preventDefault();
   const nombre = e.target['input-categoria'].value.trim();
-  if (!nombre) return alert('Ingresa nombre');
+  if (!nombre) return alert('Ingresa un nombre válido');
 
   const token = localStorage.getItem('token');
-  if (!token) {
-    alert('No autorizado. Por favor inicia sesión de nuevo.');
-    window.location.href = 'index.html';
-    return;
-  }
-
   try {
-    const res = await fetch('http://localhost:3000/categorias', {
+    const res = await fetch(`${API_URL}/categorias`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,37 +62,35 @@ async function manejadorCategoria(e) {
     if (!res.ok) throw new Error('Error al crear categoría');
 
     e.target.reset();
-    await Promise.all([cargarCategorias(token), llenarSelectCategorias(token), cargarProductos(token)]);
+    await Promise.all([
+      cargarCategorias(API_URL, token),
+      llenarSelectCategorias(API_URL, token),
+      cargarProductos(API_URL, token)
+    ]);
   } catch (err) {
     alert(err.message);
   }
 }
 
-async function manejadorProducto(e) {
+async function manejadorProducto(e, API_URL) {
   e.preventDefault();
   const form = e.target;
   const nombre = form['input-nombre'].value.trim();
   const precio = parseFloat(form['input-precio'].value);
   const categoria_id = form['input-categoria-id'].value;
   const descripcion = form['input-descripcion'].value.trim();
-  const imagenesInputs = form.querySelectorAll('.input-imagen');
-  const urls = Array.from(imagenesInputs).map(input => input.value.trim()).filter(url => url !== '');
+  const urls = Array.from(form.querySelectorAll('.input-imagen'))
+    .map(input => input.value.trim())
+    .filter(url => url !== '');
 
-  if (!nombre || isNaN(precio) || !categoria_id || urls.length === 0) {
+  if (!nombre || isNaN(precio) || !categoria_id || urls.length === 0)
     return alert('Completa todos los campos e ingresa al menos una imagen');
-  }
 
   const token = localStorage.getItem('token');
-  if (!token) {
-    alert('No autorizado. Por favor inicia sesión de nuevo.');
-    window.location.href = 'index.html';
-    return;
-  }
-
   try {
-    const res = await fetch('http://localhost:3000/productos', {
+    const res = await fetch(`${API_URL}/productos`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
@@ -99,9 +100,9 @@ async function manejadorProducto(e) {
     const prod = await res.json();
 
     for (const url of urls) {
-      const resImg = await fetch('http://localhost:3000/imagenes', {
+      const resImg = await fetch(`${API_URL}/imagenes`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -110,14 +111,14 @@ async function manejadorProducto(e) {
       if (!resImg.ok) throw new Error('Error al crear imagen');
     }
 
-    alert('Producto creado');
+    alert('✅ Producto creado con éxito');
     form.reset();
     document.getElementById('contenedor-imagenes').innerHTML = '';
-    agregarCampoImagen(); // Agrega un campo vacío por defecto
-    cargarProductos(token);
+    agregarCampoImagen();
+    cargarProductos(API_URL, token);
   } catch (err) {
-    alert(err.message || 'Error al guardar el producto');
     console.error(err);
+    alert(err.message || 'Error al guardar el producto');
   }
 }
 
@@ -131,11 +132,8 @@ function agregarCampoImagen() {
   document.getElementById('contenedor-imagenes').appendChild(div);
 }
 
-async function cargarCategorias(token) {
-  const res = await fetch('http://localhost:3000/categorias', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!res.ok) throw new Error('No autorizado');
+async function cargarCategorias(API_URL, token) {
+  const res = await fetch(`${API_URL}/categorias`);
   const cats = await res.json();
   const ul = document.getElementById('lista-categorias');
   ul.innerHTML = '';
@@ -148,15 +146,16 @@ async function cargarCategorias(token) {
     del.textContent = 'Eliminar';
     del.onclick = async () => {
       if (confirm(`¿Eliminar "${cat.nombre}"?`)) {
-        const resDel = await fetch(`http://localhost:3000/categorias/${cat.id}`, {
+        const resDel = await fetch(`${API_URL}/categorias/${cat.id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!resDel.ok) {
-          alert('No autorizado o error al eliminar categoría');
-          return;
-        }
-        await Promise.all([cargarCategorias(token), llenarSelectCategorias(token), cargarProductos(token)]);
+        if (!resDel.ok) return alert('Error al eliminar categoría');
+        await Promise.all([
+          cargarCategorias(API_URL, token),
+          llenarSelectCategorias(API_URL, token),
+          cargarProductos(API_URL, token)
+        ]);
       }
     };
     li.appendChild(del);
@@ -164,11 +163,8 @@ async function cargarCategorias(token) {
   });
 }
 
-async function cargarProductos(token) {
-  const res = await fetch('http://localhost:3000/productos', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!res.ok) throw new Error('No autorizado');
+async function cargarProductos(API_URL, token) {
+  const res = await fetch(`${API_URL}/productos`);
   const prods = await res.json();
   const tbody = document.querySelector('#tabla-productos tbody');
   tbody.innerHTML = '';
@@ -178,31 +174,23 @@ async function cargarProductos(token) {
       <td>${prod.nombre}</td>
       <td>$${Number(prod.precio).toFixed(2)}</td>
       <td>${prod.categoria || '—'}</td>
-      <td>
-        <button class="btn btn-sm btn-danger eliminar">Eliminar</button>
-      </td>`;
+      <td><button class="btn btn-sm btn-danger eliminar">Eliminar</button></td>`;
     tbody.appendChild(tr);
     tr.querySelector('.eliminar').onclick = async () => {
       if (confirm(`¿Eliminar "${prod.nombre}"?`)) {
-        const resDel = await fetch(`http://localhost:3000/productos/${prod.id}`, {
+        const resDel = await fetch(`${API_URL}/productos/${prod.id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!resDel.ok) {
-          alert('No autorizado o error al eliminar producto');
-          return;
-        }
-        cargarProductos(token);
+        if (!resDel.ok) return alert('Error al eliminar producto');
+        cargarProductos(API_URL, token);
       }
     };
   });
 }
 
-async function llenarSelectCategorias(token) {
-  const res = await fetch('http://localhost:3000/categorias', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!res.ok) throw new Error('No autorizado');
+async function llenarSelectCategorias(API_URL, token) {
+  const res = await fetch(`${API_URL}/categorias`);
   const cats = await res.json();
   const sel = document.getElementById('input-categoria-id');
   sel.innerHTML = '<option value="">Seleccione</option>';
