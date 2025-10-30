@@ -2,16 +2,22 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const connectionString = process.env.DATABASE_URL;
-const sslEnabled = process.env.DATABASE_SSL === 'true';
-
+// Render entrega la URL de la base de datos completa (DATABASE_URL)
 const pool = new Pool({
-  connectionString,
-  ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // Necesario para Render Cloud PostgreSQL
+  },
 });
 
-pool.connect()
-  .then(() => console.log('✅ Conectado correctamente a PostgreSQL (Render Cloud)'))
-  .catch(err => console.error('❌ Error al conectar con PostgreSQL:', err));
+// Evento informativo
+pool.on('connect', () => {
+  console.log('✅ Conectado correctamente a PostgreSQL (Render Cloud)');
+});
+
+pool.on('error', (err) => {
+  console.error('❌ Error inesperado en PostgreSQL:', err);
+  process.exit(-1);
+});
 
 module.exports = pool;
